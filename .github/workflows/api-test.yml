@@ -1,0 +1,75 @@
+name: Automated API Tests (Newman CI/CD)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      run_gatekeeper_demo:
+        description: 'Demonstrate Gatekeeper blocking pipeline on failure (will intentionally fail build)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  api-testing:
+    name: API Automation & Gatekeeper Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Newman and HTML Reporter
+        run: |
+          npm install -g newman newman-reporter-htmlextra
+          mkdir -p reports
+
+      - name: 🚀 Run Regression API Tests (Auth + CRUD)
+        run: |
+          newman run collections/labs-api-collection.json \
+            -e environments/labs-environment.json \
+            --env-var "baseUrl=${{ secrets.API_BASE_URL || 'https://api-script-labs.hendri.me' }}" \
+            --env-var "email=${{ secrets.API_EMAIL }}" \
+            --env-var "password=${{ secrets.API_PASSWORD }}" \
+            --reporters cli,htmlextra \
+            --reporter-htmlextra-export reports/regression-report.html
+
+      - name: 📊 Run Data-Driven Tests (CSV Scenarios)
+        run: |
+          newman run collections/labs-ddt-collection.json \
+            -e environments/labs-environment.json \
+            -d data/ddt-labs-scenario.csv \
+            --env-var "baseUrl=${{ secrets.API_BASE_URL || 'https://api-script-labs.hendri.me' }}" \
+            --env-var "email=${{ secrets.API_EMAIL }}" \
+            --env-var "password=${{ secrets.API_PASSWORD }}" \
+            --reporters cli,htmlextra \
+            --reporter-htmlextra-export reports/ddt-report.html
+
+      - name: 🛡️ Gatekeeper Demo (Intentional Failure Trigger)
+        if: ${{ inputs.run_gatekeeper_demo == true }}
+        run: |
+          echo "================================================================="
+          echo "🛡️ PROVING PIPELINE WORKS AS GATEKEEPER (INTENTIONAL FAILURE) 🛡️"
+          echo "This step demonstrates that any assertion failure immediately halts"
+          echo "the workflow, preventing defects from reaching main branch."
+          echo "================================================================="
+          newman run collections/labs-gatekeeper-demo.json \
+            -e environments/labs-environment.json \
+            --env-var "baseUrl=${{ secrets.API_BASE_URL || 'https://api-script-labs.hendri.me' }}"
+
+      - name: 📤 Upload Test Execution Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-api-test-reports
+          path: reports/
+          retention-days: 14

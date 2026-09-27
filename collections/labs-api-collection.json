@@ -1,0 +1,731 @@
+{
+  "info": {
+    "_postman_id": "a9e14a82-7f3b-4c28-98e3-518290234c90",
+    "name": "Labs Hendri - API Automated Test Suite (CRUD + Auth)",
+    "description": "Postman Collection for Labs Hendri API (https://labs.hendri.me / https://api-script-labs.hendri.me). Covers full CRUD, authentication, dynamic token handling, status code, response body, and response time assertions.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "labId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. [Auth] Login - Valid Credentials (Extract Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 200 OK",
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert response format and extract token",
+              "const res = pm.response.json();",
+              "pm.test(\"Response body indicates success and contains JWT token\", function () {",
+              "    pm.expect(res.success).to.be.true;",
+              "    pm.expect(res.message).to.include(\"Login successful\");",
+              "    pm.expect(res.data).to.have.property(\"token\");",
+              "    pm.expect(res.data.token).to.be.a(\"string\").and.not.empty;",
+              "    pm.expect(res.data).to.have.property(\"user\");",
+              "    pm.expect(res.data.user.email).to.eql(pm.environment.get(\"email\") || pm.variables.get(\"email\"));",
+              "});",
+              "",
+              "// Dynamic Token Handling: Save extracted token to environment & collection variables",
+              "const token = res.data.token;",
+              "pm.environment.set(\"token\", token);",
+              "pm.collectionVariables.set(\"token\", token);",
+              "console.log(\"[Auth] Token successfully extracted and stored dynamically.\");"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Authenticates user and dynamically extracts JWT token into variable {{token}}"
+      }
+    },
+    {
+      "name": "02. [Auth] Login - Invalid Credentials (Negative Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 401 Unauthorized",
+              "pm.test(\"Status code is 401 Unauthorized\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert error response body",
+              "const res = pm.response.json();",
+              "pm.test(\"Response body indicates failure with appropriate error message\", function () {",
+              "    pm.expect(res.success).to.be.false;",
+              "    pm.expect(res.error.message).to.eql(\"Invalid email or password\");",
+              "    pm.expect(res.error.code).to.eql(\"AUTH_FAILED\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"unregistered_qa_test@example.com\",\n  \"password\": \"WrongPassword999!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Verifies 401 Unauthorized returned when invalid credentials provided"
+      }
+    },
+    {
+      "name": "03. [Auth] Login - Missing Password (Validation Negative Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 400 Bad Request",
+              "pm.test(\"Status code is 400 Bad Request\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert validation error response",
+              "const res = pm.response.json();",
+              "pm.test(\"Response body contains password validation error\", function () {",
+              "    pm.expect(res.success).to.be.false;",
+              "    pm.expect(res.error.message).to.include(\"Password is required\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Verifies 400 Bad Request when password field is missing"
+      }
+    },
+    {
+      "name": "04. [Labs] GET All Labs - List Verification (Positive Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 200 OK",
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert response structure",
+              "const res = pm.response.json();",
+              "pm.test(\"Response body contains success true and data array\", function () {",
+              "    pm.expect(res.success).to.be.true;",
+              "    pm.expect(res.data).to.be.an(\"array\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/labs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "labs"
+          ]
+        },
+        "description": "Fetches all labs for the authenticated user"
+      }
+    },
+    {
+      "name": "05. [Labs] POST Create Lab - Standard Payload (Positive Test & Save ID)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 201 Created",
+              "pm.test(\"Status code is 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert response body and store ID",
+              "const res = pm.response.json();",
+              "pm.test(\"Response body contains created lab details with ID\", function () {",
+              "    pm.expect(res.success).to.be.true;",
+              "    pm.expect(res.message).to.eql(\"Lab added successfully\");",
+              "    pm.expect(res.data).to.have.property(\"id\");",
+              "    pm.expect(res.data.title).to.eql(\"Automated E2E Lab - QA Final\");",
+              "    pm.expect(res.data.description).to.eql(\"Created via Postman Newman regression test\");",
+              "});",
+              "",
+              "// Dynamic ID Handling: Store created lab ID for subsequent tests",
+              "const createdId = res.data.id;",
+              "pm.environment.set(\"labId\", createdId);",
+              "pm.collectionVariables.set(\"labId\", createdId);",
+              "console.log(\"[Labs] Created Lab ID:\", createdId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Automated E2E Lab - QA Final\",\n  \"description\": \"Created via Postman Newman regression test\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/labs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "labs"
+          ]
+        },
+        "description": "Creates a new lab and saves dynamic labId into environment variables"
+      }
+    },
+    {
+      "name": "06. [Labs] GET Lab by ID - Verify Created Lab (Positive Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 200 OK",
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert lab data matches saved labId and title",
+              "const res = pm.response.json();",
+              "const expectedLabId = pm.environment.get(\"labId\") || pm.variables.get(\"labId\");",
+              "pm.test(\"Response body matches created lab data\", function () {",
+              "    pm.expect(res.success).to.be.true;",
+              "    pm.expect(String(res.data.id)).to.eql(String(expectedLabId));",
+              "    pm.expect(res.data.title).to.eql(\"Automated E2E Lab - QA Final\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/labs/{{labId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "labs",
+            "{{labId}}"
+          ]
+        },
+        "description": "Retrieves single lab details by ID"
+      }
+    },
+    {
+      "name": "07. [Labs] PUT Update Lab by ID - Modify Title & Description (Positive Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 200 OK",
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert update response body",
+              "const res = pm.response.json();",
+              "pm.test(\"Response body reflects updated lab values\", function () {",
+              "    pm.expect(res.success).to.be.true;",
+              "    pm.expect(res.message).to.eql(\"lab updated successfully\");",
+              "    pm.expect(res.data.title).to.eql(\"Automated E2E Lab - Title Updated\");",
+              "    pm.expect(res.data.description).to.eql(\"Description successfully modified via PUT request\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Automated E2E Lab - Title Updated\",\n  \"description\": \"Description successfully modified via PUT request\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/labs/{{labId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "labs",
+            "{{labId}}"
+          ]
+        },
+        "description": "Updates title and description of the previously created lab"
+      }
+    },
+    {
+      "name": "08. [Labs] POST Create Lab - Empty Title Validation (Negative Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 400 Bad Request",
+              "pm.test(\"Status code is 400 Bad Request\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert validation error response",
+              "const res = pm.response.json();",
+              "pm.test(\"Response body contains Title validation failure message\", function () {",
+              "    pm.expect(res.success).to.be.false;",
+              "    pm.expect(res.error.message).to.include(\"Title cannot be empty\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"\",\n  \"description\": \"Testing validation error for empty title\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/labs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "labs"
+          ]
+        },
+        "description": "Tests server validation rejecting empty string title"
+      }
+    },
+    {
+      "name": "09. [Labs] GET All Labs - Missing Token (Unauthorized Negative Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 401 Unauthorized",
+              "pm.test(\"Status code is 401 Unauthorized\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert unauthorized message",
+              "const res = pm.response.json();",
+              "pm.test(\"Response body confirms missing token\", function () {",
+              "    pm.expect(res.message).to.eql(\"No token provided\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/labs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "labs"
+          ]
+        },
+        "description": "Tests endpoint protection when no Bearer token is provided"
+      }
+    },
+    {
+      "name": "10. [Labs] DELETE Lab by ID - Remove Lab (Positive Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 200 OK",
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert delete response body",
+              "const res = pm.response.json();",
+              "const expectedLabId = pm.environment.get(\"labId\") || pm.variables.get(\"labId\");",
+              "pm.test(\"Response body confirms successful deletion of the lab\", function () {",
+              "    pm.expect(res.success).to.be.true;",
+              "    pm.expect(res.message).to.eql(\"lab deleted successfully\");",
+              "    pm.expect(String(res.data.id)).to.eql(String(expectedLabId));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/labs/{{labId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "labs",
+            "{{labId}}"
+          ]
+        },
+        "description": "Deletes the lab created in previous step"
+      }
+    },
+    {
+      "name": "11. [Labs] GET Lab by ID - Verify Deleted Lab 404 (Negative Test)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Assert status code is 404 Not Found",
+              "pm.test(\"Status code is 404 Not Found\", function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "",
+              "// Assert response time",
+              "pm.test(\"Response time is acceptable (below 2000ms)\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// Assert not found response body",
+              "const res = pm.response.json();",
+              "pm.test(\"Response body confirms lab is not found\", function () {",
+              "    pm.expect(res.success).to.be.false;",
+              "    pm.expect(res.error.message).to.eql(\"lab not found\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/labs/{{labId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "labs",
+            "{{labId}}"
+          ]
+        },
+        "description": "Verifies the deleted lab is no longer accessible and returns 404 Not Found"
+      }
+    }
+  ]
+}

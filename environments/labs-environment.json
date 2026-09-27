@@ -1,0 +1,45 @@
+{
+  "id": "c1f7a83d-3f12-4a56-b922-8d76d4981fa1",
+  "name": "Labs Hendri - Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "https://api-script-labs.hendri.me",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "webUrl",
+      "value": "https://labs.hendri.me",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "email",
+      "value": "qa_final_assign@example.com",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "password",
+      "value": "Password123!",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "labId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-09-27T10:17:00.000Z",
+  "_postman_exported_using": "Postman/10.0.0"
+}

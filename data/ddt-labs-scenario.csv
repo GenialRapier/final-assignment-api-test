@@ -1,0 +1,7 @@
+scenario_id,scenario_type,scenario_name,title,description,expected_status,expected_success
+TC_DDT_01,valid,Valid Standard Title & Description,Automated Lab Valid Standard,Valid standard description for testing,201,true
+TC_DDT_02,valid,Valid Alphanumeric & Punctuation,Lab Pro v2.0 - Automated Test #123,Boundary test with numbers and dashes 1234567890,201,true
+TC_DDT_03,invalid,Invalid Empty Title,"",Description with empty title should fail validation,400,false
+TC_DDT_04,invalid,Invalid Whitespace Only Title,"   ",Description with whitespace only title should fail validation,400,false
+TC_DDT_05,edge_case,Edge Case Unicode and Emojis,🧪 Automated Lab 🚀 Edge Case 2026 ⭐,Description with unicode emojis 🎯🔥 and symbols,201,true
+TC_DDT_06,edge_case,Edge Case All Special Symbols,"Lab Edge Case !@#$%^&*()_+{}[]:;~?",Testing extensive special symbols in title and description,201,true

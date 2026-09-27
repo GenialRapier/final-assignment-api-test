@@ -1,0 +1,27 @@
+{
+  "name": "final-assignment-api-automation",
+  "version": "1.0.0",
+  "description": "API Test Automation with Postman, Newman, DDT (CSV), CI/CD GitHub Actions & Gatekeeper Verification",
+  "scripts": {
+    "test": "newman run collections/labs-api-collection.json -e environments/labs-environment.json",
+    "test:ddt": "newman run collections/labs-ddt-collection.json -e environments/labs-environment.json -d data/ddt-labs-scenario.csv",
+    "test:all": "npm run test && npm run test:ddt",
+    "test:gatekeeper": "newman run collections/labs-gatekeeper-demo.json -e environments/labs-environment.json",
+    "test:report": "newman run collections/labs-api-collection.json -e environments/labs-environment.json --reporters cli,htmlextra --reporter-htmlextra-export reports/regression-report.html && newman run collections/labs-ddt-collection.json -e environments/labs-environment.json -d data/ddt-labs-scenario.csv --reporters cli,htmlextra --reporter-htmlextra-export reports/ddt-report.html"
+  },
+  "devDependencies": {
+    "newman": "^6.2.2",
+    "newman-reporter-htmlextra": "^1.23.1"
+  },
+  "keywords": [
+    "postman",
+    "newman",
+    "ci-cd",
+    "github-actions",
+    "ddt",
+    "data-driven-testing",
+    "gatekeeper"
+  ],
+  "author": "QA Engineer",
+  "license": "MIT"
+}

@@ -1,0 +1,168 @@
+{
+  "info": {
+    "_postman_id": "b8f219c0-1234-4567-89ab-cdef01234567",
+    "name": "Labs Hendri - Data Driven Testing (CSV)",
+    "description": "Data-Driven Testing for Labs Hendri API using CSV input scenarios (Valid, Invalid, Edge Cases).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "titleJson",
+      "value": "\"\"",
+      "type": "string"
+    },
+    {
+      "key": "descriptionJson",
+      "value": "\"\"",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "[DDT] Create Lab Scenario (Parameterized)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Ensure authentication token exists before running DDT scenario",
+              "const baseUrl = pm.environment.get(\"baseUrl\") || \"https://api-script-labs.hendri.me\";",
+              "const email = pm.environment.get(\"email\");",
+              "const password = pm.environment.get(\"password\");",
+              "const existingToken = pm.environment.get(\"token\");",
+              "",
+              "// Safely serialize title and description into valid JSON literals",
+              "const rawTitle = pm.iterationData.get(\"title\") !== undefined ? String(pm.iterationData.get(\"title\")) : \"\";",
+              "const rawDesc = pm.iterationData.get(\"description\") !== undefined ? String(pm.iterationData.get(\"description\")) : \"\";",
+              "pm.variables.set(\"titleJson\", JSON.stringify(rawTitle));",
+              "pm.variables.set(\"descriptionJson\", JSON.stringify(rawDesc));",
+              "",
+              "if (!existingToken && email && password) {",
+              "    pm.sendRequest({",
+              "        url: `${baseUrl}/api/auth/login`,",
+              "        method: 'POST',",
+              "        header: { 'Content-Type': 'application/json' },",
+              "        body: {",
+              "            mode: 'raw',",
+              "            raw: JSON.stringify({ email: email, password: password })",
+              "        }",
+              "    }, function (err, res) {",
+              "        if (!err && res.code === 200) {",
+              "            const json = res.json();",
+              "            pm.environment.set(\"token\", json.data.token);",
+              "            pm.variables.set(\"token\", json.data.token);",
+              "        }",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const expectedStatus = parseInt(pm.iterationData.get(\"expected_status\"));",
+              "const expectedSuccess = String(pm.iterationData.get(\"expected_success\")).toLowerCase() === \"true\";",
+              "const scenarioId = pm.iterationData.get(\"scenario_id\");",
+              "const scenarioType = pm.iterationData.get(\"scenario_type\");",
+              "const scenarioName = pm.iterationData.get(\"scenario_name\");",
+              "",
+              "// 1. Status Code Assertion",
+              "pm.test(`[${scenarioId}] (${scenarioType.toUpperCase()}) - Status code is ${expectedStatus}`, function () {",
+              "    pm.response.to.have.status(expectedStatus);",
+              "});",
+              "",
+              "// 2. Response Time Assertion",
+              "pm.test(`[${scenarioId}] - Response time is acceptable (below 2000ms)`, function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "// 3. Response Body Assertion",
+              "const res = pm.response.json();",
+              "pm.test(`[${scenarioId}] - Response success flag is ${expectedSuccess}`, function () {",
+              "    pm.expect(res.success).to.eql(expectedSuccess);",
+              "});",
+              "",
+              "if (expectedStatus === 201) {",
+              "    pm.test(`[${scenarioId}] - Created lab returns valid ID and matches title`, function () {",
+              "        pm.expect(res.data).to.have.property(\"id\");",
+              "        pm.expect(res.data.title).to.eql(pm.iterationData.get(\"title\"));",
+              "        pm.expect(res.message).to.eql(\"Lab added successfully\");",
+              "    });",
+              "    ",
+              "    // Auto-cleanup: Delete created lab to keep environment clean",
+              "    const labId = res.data.id;",
+              "    const token = pm.environment.get(\"token\") || pm.variables.get(\"token\");",
+              "    const baseUrl = pm.environment.get(\"baseUrl\") || \"https://api-script-labs.hendri.me\";",
+              "    pm.sendRequest({",
+              "        url: `${baseUrl}/api/labs/${labId}`,",
+              "        method: 'DELETE',",
+              "        header: {",
+              "            'Authorization': `Bearer ${token}`,",
+              "            'Accept': 'application/json'",
+              "        }",
+              "    }, function (delErr, delRes) {",
+              "        if (!delErr && delRes.code === 200) {",
+              "            console.log(`[DDT CleanUp] Cleaned up created lab ID ${labId}`);",
+              "        }",
+              "    });",
+              "} else {",
+              "    pm.test(`[${scenarioId}] - Validation error is properly formatted in response body`, function () {",
+              "        pm.expect(res.error).to.be.an(\"object\");",
+              "        pm.expect(res.error.message).to.be.a(\"string\").and.not.empty;",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": {{titleJson}},\n  \"description\": {{descriptionJson}}\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/labs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "labs"
+          ]
+        },
+        "description": "Executes parameterized lab creation using values from CSV iteration data"
+      }
+    }
+  ]
+}
